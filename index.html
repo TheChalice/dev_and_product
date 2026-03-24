@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>职能沟通翻译助手</title>
+    <!-- 引入 Markdown 解析库 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- 引入代码高亮样式 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <style>
+        /* --- 基础样式 --- */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; display: flex; justify-content: center; height: 100vh; margin: 0; }
+        .container { width: 100%; max-width: 800px; background: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.1); display: flex; flex-direction: column; height: 100%; }
+        
+        /* --- 头部 --- */
+        header { padding: 20px; border-bottom: 1px solid #eee; background: #fff; }
+        h1 { margin: 0; font-size: 1.2rem; color: #333; text-align: center; }
+        
+        /* --- 聊天区域 --- */
+        #chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: #fafafa; }
+        
+        /* 消息容器样式 (统一使用 div) */
+        .message { 
+            padding: 15px; 
+            border-radius: 10px; 
+            width: 85%; 
+            line-height: 1.6; 
+            font-size: 0.95rem; 
+            word-wrap: break-word;
+        }
+
+        /* 用户消息样式 */
+        .user-msg { align-self: flex-end; background: #007bff; color: white; border-bottom-right-radius: 2px; }
+        /* AI 消息样式 */
+        .ai-msg { align-self: flex-start; background: #fff; border: 1px solid #e0e0e0; border-bottom-left-radius: 2px; }
+        
+        /* --- Markdown 内容微调 (针对 div 容器优化) --- */
+        .ai-msg p { margin: 0.5em 0; } /* 控制段落间距 */
+        .ai-msg p:first-child { margin-top: 0; }
+        .ai-msg p:last-child { margin-bottom: 0; }
+        .ai-msg ul, .ai-msg ol { margin: 0.5em 0; padding-left: 20px; }
+        .ai-msg pre { background: #f6f8fa; padding: 10px; border-radius: 6px; overflow-x: auto; margin: 0.5em 0; }
+        .ai-msg code { font-family: 'Consolas', monospace; background: #f0f0f0; padding: 2px 5px; border-radius: 4px; color: #d63384; }
+        .ai-msg pre code { background: transparent; color: inherit; padding: 0; }
+
+        /* --- 输入区域 --- */
+        .input-area { padding: 20px; border-top: 1px solid #eee; background: #fff; display: flex; gap: 10px; }
+        
+        /* 方向切换按钮 */
+        .toggle-group { display: flex; gap: 5px; }
+        .toggle-btn { padding: 10px 15px; border: 1px solid #ddd; background: #fff; cursor: pointer; border-radius: 6px; font-size: 0.9rem; transition: all 0.2s; }
+        .toggle-btn.active { background: #333; color: #fff; border-color: #333; }
+        
+        /* 文本框和发送按钮 */
+        textarea { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 6px; resize: none; outline: none; font-family: inherit; }
+        textarea:focus { border-color: #007bff; }
+        button#send-btn { padding: 0 25px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+        button#send-btn:hover { background: #0056b3; }
+        button#send-btn:disabled { background: #ccc; cursor: not-allowed; }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+    <header>
+        <h1>🤖 职能沟通翻译助手</h1>
+    </header>
+
+    <!-- 聊天记录显示区 -->
+    <div id="chat-box">
+        <div class="message ai-msg">
+            你好！我是你的沟通翻译助手。请输入内容，我会帮你进行“产品↔开发”的双向翻译。
+        </div>
+    </div>
+
+    <!-- 输入控制区 -->
+    <div class="input-area">
+        <!-- 切换翻译方向 -->
+        <div class="toggle-group">
+            <button class="toggle-btn active" onclick="setDirection('product_to_dev')" id="btn-p2d">产品 ➡️ 开发</button>
+            <button class="toggle-btn" onclick="setDirection('dev_to_product')" id="btn-d2p">开发 ➡️ 产品</button>
+        </div>
+        <textarea id="user-input" rows="1" placeholder="请输入需要翻译的内容..."></textarea>
+        <button id="send-btn" onclick="sendMessage()">发送</button>
+    </div>
+</div>
+
+<script>
+    // --- 状态管理 ---
+    let currentDirection = 'product_to_dev';
+    const chatBox = document.getElementById('chat-box');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+
+    // --- 切换方向逻辑 ---
+    function setDirection(dir) {
+        currentDirection = dir;
+        document.getElementById('btn-p2d').className = dir === 'product_to_dev' ? 'toggle-btn active' : 'toggle-btn';
+        document.getElementById('btn-d2p').className = dir === 'dev_to_product' ? 'toggle-btn active' : 'toggle-btn';
+        userInput.focus();
+    }
+
+    // --- 发送消息核心逻辑 ---
+    async function sendMessage() {
+        const text = userInput.value.trim();
+        if (!text) return;
+
+        // 1. 显示用户消息 (使用 div)
+        appendMessage(text, 'user-msg');
+        userInput.value = '';
+        sendBtn.disabled = true;
+        sendBtn.innerText = "思考中...";
+
+        // 2. 创建 AI 消息占位符 (使用 div)
+        const aiMessageDiv = appendMessage("", 'ai-msg');
+
+        try {
+            // 3. 调用后端 API
+            const response = await fetch('http://127.0.0.1:8000/translate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: text,
+                    direction: currentDirection
+                })
+            });
+
+            if (!response.ok) throw new Error('网络响应错误');
+
+            // 4. 处理流式响应
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+                
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const jsonStr = line.slice(6);
+                        if (jsonStr.trim() === '[DONE]') {
+                            
+                            aiMessageDiv.innerHTML = marked.parse(aiMessageDiv.innerHTML)
+                             
+                       
+                            continue
+
+                        };
+                        
+                        try {
+                            const data = JSON.parse(jsonStr);
+                            const content = data.choices[0]?.delta?.content || "";
+                            
+                            // --- 核心修改：直接操作 innerHTML ---
+                            // 不再使用 <p> 标签包裹，而是让 marked 解析完整文本
+                            // 为了性能，实际项目中可以使用增量解析，但这里为了简单直接重绘
+                            aiMessageDiv.innerHTML +=content;
+                            
+                            // 自动滚动到底部
+                            chatBox.scrollTop = chatBox.scrollHeight;
+                        } catch (e) {
+                            // 忽略解析错误
+                        }
+                    }
+                }
+            }
+
+        } catch (err) {
+            aiMessageDiv.innerHTML += `<br><span style="color:red">❌ 请求失败: ${err.message}</span>`;
+        } finally {
+            sendBtn.disabled = false;
+            sendBtn.innerText = "发送";
+        }
+    }
+
+    // --- 辅助函数：添加消息到界面 ---
+    function appendMessage(text, className) {
+        const div = document.createElement('div'); // 统一使用 div
+        div.className = `message ${className}`;
+        div.innerHTML = text; 
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+        return div;
+    }
+    
+    // 简单的回车发送支持
+    userInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,40 @@
+name: mians
+channels:
+  - defaults
+dependencies:
+  - bzip2=1.0.8=h6c40b1e_6
+  - ca-certificates=2025.7.15=hecd8cb5_0
+  - expat=2.7.1=h6d0c2b6_0
+  - libcxx=19.1.7=haebbb44_3
+  - libffi=3.4.4=hecd8cb5_1
+  - ncurses=6.5=h923df54_0
+  - openssl=3.0.17=hee2dfae_0
+  - pip=26.0.1=pyhc872135_0
+  - python=3.9.23=hd8516d5_0
+  - readline=8.3=h49f2429_0
+  - setuptools=78.1.1=py39hecd8cb5_0
+  - sqlite=3.50.2=hc8b0dd6_1
+  - tk=8.6.15=h3a5a201_0
+  - tzdata=2026a=he532380_0
+  - wheel=0.45.1=py39hecd8cb5_0
+  - xz=5.6.4=h46256e1_1
+  - zlib=1.2.13=h4b97444_1
+  - pip:
+    - annotated-doc==0.0.4
+    - annotated-types==0.7.0
+    - anyio==4.12.1
+    - certifi==2026.2.25
+    - click==8.1.8
+    - exceptiongroup==1.3.1
+    - fastapi==0.128.8
+    - h11==0.16.0
+    - httpcore==1.0.9
+    - httpx==0.28.1
+    - idna==3.11
+    - pydantic==2.12.5
+    - pydantic-core==2.41.5
+    - starlette==0.49.3
+    - typing-extensions==4.15.0
+    - typing-inspection==0.4.2
+    - uvicorn==0.39.0
+prefix: /Users/sorcerer/opt/anaconda3/envs/mians
